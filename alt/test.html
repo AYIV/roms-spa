@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="UTF-8">
+
+	<!-- bootstrap -->
+	<script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha256-k2WSCIexGzOj3Euiig+TlR8gA0EmPjuc79OEeY5L45g=" crossorigin="anonymous"></script>
+	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css">
+	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap-theme.min.css">
+	<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/js/bootstrap.min.js"></script>
+
+	<!-- angular -->
+	<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.4.8/angular.min.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/angular-smart-table/1.4.8/smart-table.min.js"></script>
+	
+	<!-- firebase -->
+	<script src="https://www.gstatic.com/firebasejs/3.7.3/firebase.js"></script>
+	
+	<style>
+		body {
+			font-family: 'Consolas'
+		}
+	</style>
+
+	<script>
+		var app = angular.module('myApp', ['smart-table']);
+
+		app.service('firerep', function($timeout) {
+			this.init = () => {
+				// Initialize Firebase
+				var config = {
+					apiKey: "AIzaSyAyZqRNUQP9HdSxMoiCTAkcp7J3feJ04CA",
+					authDomain: "roms-db.firebaseapp.com",
+					databaseURL: "https://roms-db.firebaseio.com",
+					storageBucket: "roms-db.appspot.com",
+					messagingSenderId: "867892938576"
+				};
+				firebase.initializeApp(config);
+			};
+
+			this.whenAdded = (path, callback) => {
+				firebase
+					.database()
+					.ref(path)
+					.on('child_added', data => $timeout(() => callback(data.val()), 0));
+			};
+			
+			this.add = (path, obj) => {
+				firebase
+					.database()
+					.ref(path)
+					.push()
+					.set(obj);
+			};
+		});
+
+		app.controller('myCtrl', function($scope, firerep) {
+			$scope.resources = {
+				orders: "Заказы",
+				price: "Цена",
+				description: "Описание",
+				newOrder: "Новый заказ",
+				add: "Добавить"
+			};
+
+			$scope.orderProperties = [
+				{ name: "fullname",	display: "Ф.И.О",	  input_type: "text"	 },
+				{ name: "model",	display: "Модель",	  input_type: "text"	 },
+				{ name: "price",	display: "Стоимость", input_type: "number" },
+				{ name: "paid", 	display: "Оплачено",  input_type: "number" },
+				{ name: "rest", 	display: "Доплатить", input_type: "number" },
+				{ name: "accepted", display: "Принят", 	  input_type: "text" },
+				{ name: "issued", 	display: "Выдан", 	  input_type: "text" },
+				{ name: "phone", 	display: "Телефон",   input_type: "text" },
+				{ name: "comments", display: "Пометка",   input_type: "text" },
+				{ name: "closed", 	display: "Закрыт", 	  input_type: "text" }
+			];
+		
+			$scope.orders = [];
+			
+			$scope.order = {
+				price: 355,
+				description: "Testiod2000",
+
+				addNew: false
+			};
+			
+			firerep.init();			
+			firerep.whenAdded('orders/new', child => $scope.orders.push(child));
+			
+			$scope.push = () => {
+				firerep.add('orders/new', {
+					price: $scope.order.price,
+					description: $scope.order.description
+				});
+				
+				$scope.order.price = 0;
+				$scope.order.description = "";
+			};
+		});
+	</script>
+</head>
+<body ng-app="myApp" ng-controller="myCtrl">
+<div class="container">
+<div class="row">
+<div class="col-xs-12">
+	<div class="panel panel-default">
+		<div class="panel-heading">{{ resources.newOrder }} <div class="btn btn-success pull-right" ng-click="order.addNew = !order.addNew">+</div></div>
+		<div class="panel-body" ng-hide="!order.addNew">
+			<div class="input-group" ng-repeat="prop in orderProperties">
+			  <!--<span class="input-group-addon" id="{{prop.name}}-addon">{{prop.display}}</span>-->
+			  <input type="{{prop.input_type}}" ng-model="order[prop.name]" class="form-control" placeholder="{{prop.display}}">
+			</div>
+			<div class="btn btn-primary pull-right" ng-click="push()">{{ resources.add }}</div>
+		</div>
+	</div>
+
+	<div class="panel panel-default">
+		<div class="panel-heading">{{ resources.orders }}</div>
+		<div class="panel-body">
+			<table st-table="orders" class="table table-striped">
+			<thead>
+				<tr>
+					<th>{{ resources.price }}</th>
+					<th>{{ resources.description }}</th>
+				</tr>
+			</thead>
+			<tbody>
+				<tr ng-repeat="order in orders">
+					<td>{{order.price}}</td>
+					<td>{{order.description}}</td>
+				</tr>
+			</tbody>
+			</table>
+		</div>
+	</div>
+</div>
+</div>
+</div>
+</body>
+</html>
