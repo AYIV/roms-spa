@@ -7,14 +7,16 @@
 <body ng-app="BlankApp" ng-cloak>
   <!--
     Your HTML content here
-  -->  
-  <md-content>
-      <md-toolbar class="md-primary md-hue-1">
+  --> 
+
+  <md-toolbar class="md-primary">
           <div class="md-toolbar-tools">
             <h2 flex md-truncate>Toolbar with Disabled/Enabled Icon Buttons</h2>
             <md-button class="md-primary md-raised">Open</md-button>
           </div>
       </md-toolbar>
+
+    <md-content ng-controller="myCtrl">
         <md-nav-bar md-selected-nav-item="currentNavItem" nav-bar-aria-label="navigation links">
             <md-nav-item md-nav-click="goto('page1')" name="page1">
                 Page One
@@ -26,7 +28,25 @@
                 Page Three
             </md-nav-item>
         </md-nav-bar>
-  </md-content>
+        
+        <md-content class="md-padding" layout="row">
+            <div flex-xs flex-gt-xs="50" layout="column">
+                <md-card ng-repeat="order in orders">
+                    <md-card-title>
+                        <md-card-title-text>
+                            <span class="md-headline">{{ order.description }}</span>
+                            <span class="md-subhead">{{ order.price }}</span>
+                        </md-card-title-text>
+                        <md-card-title-media><div class="md-media-lg card-media"></div></md-card-title-media>
+                    </md-card-title>
+                    <md-card-actions layout="row" layout-align="end center">
+                        <md-button>Action 1</md-button>
+                        <md-button>Action 2</md-button>
+                    </md-card-actions>
+                </md-card>
+            </div>
+        </md-content>
+    </md-content>
 
   <!-- Angular Material requires Angular.js Libraries -->
   <script src="http://ajax.googleapis.com/ajax/libs/angularjs/1.5.5/angular.min.js"></script>
@@ -37,13 +57,50 @@
   <!-- Angular Material Library -->
   <script src="http://ajax.googleapis.com/ajax/libs/angular_material/1.1.0/angular-material.min.js"></script>
   
+  <!-- firebase -->
+	<script src="https://www.gstatic.com/firebasejs/3.7.3/firebase.js"></script>
+
   <!-- Your application bootstrap  -->
   <script type="text/javascript">    
     /**
      * You must include the dependency on 'ngMaterial' 
      */
-    angular.module('BlankApp', ['ngMaterial']);
+    var app = angular.module('BlankApp', ['ngMaterial']);
+
+    app.service('firerep', function($timeout) {
+			this.init = () => {
+				// Initialize Firebase
+				var config = {
+					apiKey: "AIzaSyAyZqRNUQP9HdSxMoiCTAkcp7J3feJ04CA",
+					authDomain: "roms-db.firebaseapp.com",
+					databaseURL: "https://roms-db.firebaseio.com",
+					storageBucket: "roms-db.appspot.com",
+					messagingSenderId: "867892938576"
+				};
+				firebase.initializeApp(config);
+			};
+			this.whenAdded = (path, callback) => {
+				firebase
+					.database()
+					.ref(path)
+					.on('child_added', data => $timeout(() => callback(data.val()), 0));
+			};
+			
+			this.add = (path, obj) => {
+				firebase
+					.database()
+					.ref(path)
+					.push()
+					.set(obj);
+			};
+		});
+
+    app.controller('myCtrl', ($scope, firerep) => {
+      $scope.orders = [];
+
+      firerep.init();			
+			firerep.whenAdded('orders/new', child => $scope.orders.push(child));
+    });
   </script>
-  
 </body>
 </html>
